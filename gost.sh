@@ -2,8 +2,8 @@
 Green_font_prefix="\033[32m" && Red_font_prefix="\033[31m" && Green_background_prefix="\033[42;37m" && Font_color_suffix="\033[0m"
 Info="${Green_font_prefix}[信息]${Font_color_suffix}"
 Error="${Red_font_prefix}[错误]${Font_color_suffix}"
-shell_version="1.1.1"
-ct_new_ver="2.11.5" # 2.x 不再跟随官方更新
+shell_version="1.1.2"
+ct_new_ver="2.12.0" # 2.x 不再跟随官方更新
 gost_conf_path="/etc/gost/config.json"
 raw_conf_path="/etc/gost/rawconf"
 function checknew() {
@@ -65,7 +65,7 @@ function check_new_ver() {
   # deprecated
   ct_new_ver=$(wget --no-check-certificate -qO- -t2 -T3 https://api.github.com/repos/ginuerzh/gost/releases/latest | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g;s/v//g')
   if [[ -z ${ct_new_ver} ]]; then
-    ct_new_ver="2.11.5"
+    ct_new_ver="2.12.0"
     echo -e "${Error} gost 最新版本获取失败，正在下载v${ct_new_ver}版"
   else
     echo -e "${Info} gost 目前最新版本为 ${ct_new_ver}"
@@ -85,6 +85,31 @@ function check_nor_file() {
   rm -rf /usr/lib/systemd/system/gost.service
   rm -rf /usr/bin/gost
 }
+function get_gost_asset_name() {
+  case "$bit" in
+    amd64)
+      echo "gost_${ct_new_ver}_linux_amd64.tar.gz"
+      ;;
+    386)
+      echo "gost_${ct_new_ver}_linux_386.tar.gz"
+      ;;
+    armv5)
+      echo "gost_${ct_new_ver}_linux_armv5.tar.gz"
+      ;;
+    armv6)
+      echo "gost_${ct_new_ver}_linux_armv6.tar.gz"
+      ;;
+    armv7)
+      echo "gost_${ct_new_ver}_linux_armv7.tar.gz"
+      ;;
+    arm64|aarch64)
+      echo "gost_${ct_new_ver}_linux_arm64.tar.gz"
+      ;;
+    *)
+      echo ""
+      ;;
+  esac
+}
 function Install_ct() {
   check_root
   check_nor_file
@@ -95,20 +120,24 @@ function Install_ct() {
   echo -e "若为国内机器建议使用大陆镜像加速下载"
   read -e -p "是否使用？[y/n]:" addyn
   [[ -z ${addyn} ]] && addyn="n"
+  asset_name="$(get_gost_asset_name)"
+  if [[ -z "$asset_name" ]]; then
+    echo -e "${Error} 不支持的架构：$bit"
+    exit 1
+  fi
+
   if [[ ${addyn} == [Yy] ]]; then
-    rm -rf gost-linux-"$bit"-"$ct_new_ver".gz
-    wget --no-check-certificate https://gotunnel.oss-cn-shenzhen.aliyuncs.com/gost-linux-"$bit"-"$ct_new_ver".gz
-    gunzip gost-linux-"$bit"-"$ct_new_ver".gz
-    mv gost-linux-"$bit"-"$ct_new_ver" gost
+    rm -rf "$asset_name"
+    wget --no-check-certificate "https://gotunnel.oss-cn-shenzhen.aliyuncs.com/$asset_name"
+    tar -xzf "$asset_name"
     mv gost /usr/bin/gost
     chmod -R 777 /usr/bin/gost
     wget --no-check-certificate https://gotunnel.oss-cn-shenzhen.aliyuncs.com/gost.service && chmod -R 777 gost.service && mv gost.service /usr/lib/systemd/system
     mkdir /etc/gost && wget --no-check-certificate https://gotunnel.oss-cn-shenzhen.aliyuncs.com/config.json && mv config.json /etc/gost && chmod -R 777 /etc/gost
   else
-    rm -rf gost-linux-"$bit"-"$ct_new_ver".gz
-    wget --no-check-certificate https://github.com/ginuerzh/gost/releases/download/v"$ct_new_ver"/gost-linux-"$bit"-"$ct_new_ver".gz
-    gunzip gost-linux-"$bit"-"$ct_new_ver".gz
-    mv gost-linux-"$bit"-"$ct_new_ver" gost
+    rm -rf "$asset_name"
+    wget --no-check-certificate "https://github.com/ginuerzh/gost/releases/download/v${ct_new_ver}/$asset_name"
+    tar -xzf "$asset_name"
     mv gost /usr/bin/gost
     chmod -R 777 /usr/bin/gost
     wget --no-check-certificate https://raw.githubusercontent.com/KANIKIG/Multi-EasyGost/master/gost.service && chmod -R 777 gost.service && mv gost.service /usr/lib/systemd/system
@@ -117,7 +146,7 @@ function Install_ct() {
 
   systemctl enable gost && systemctl restart gost
   echo "------------------------------"
-  if test -a /usr/bin/gost -a /usr/lib/systemctl/gost.service -a /etc/gost/config.json; then
+  if test -a /usr/bin/gost -a /usr/lib/systemd/system/gost.service -a /etc/gost/config.json; then
     echo "gost安装成功"
     rm -rf "$(pwd)"/gost
     rm -rf "$(pwd)"/gost.service
