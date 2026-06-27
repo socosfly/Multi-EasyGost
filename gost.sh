@@ -117,7 +117,7 @@ function Install_ct() {
   check_file
   check_sys
   # check_new_ver
-  echo -e "若为国内机器建议使用大陆镜像加速下载"
+  echo -e "若为国内机器建议使用Github加速下载"
   read -e -p "是否使用？[y/n]:" addyn
   [[ -z ${addyn} ]] && addyn="n"
   asset_name="$(get_gost_asset_name)"
@@ -128,12 +128,12 @@ function Install_ct() {
 
   if [[ ${addyn} == [Yy] ]]; then
     rm -rf "$asset_name"
-    wget --no-check-certificate "https://gotunnel.oss-cn-shenzhen.aliyuncs.com/$asset_name"
+    wget --no-check-certificate "https://gh-proxy.org/https://github.com/ginuerzh/gost/releases/download/v${ct_new_ver}/$asset_name"
     tar -xzf "$asset_name"
     mv gost /usr/bin/gost
     chmod -R 777 /usr/bin/gost
-    wget --no-check-certificate https://gotunnel.oss-cn-shenzhen.aliyuncs.com/gost.service && chmod -R 777 gost.service && mv gost.service /usr/lib/systemd/system
-    mkdir /etc/gost && wget --no-check-certificate https://gotunnel.oss-cn-shenzhen.aliyuncs.com/config.json && mv config.json /etc/gost && chmod -R 777 /etc/gost
+    wget --no-check-certificate https://gh-proxy.org/https://raw.githubusercontent.com/socosfly/Multi-EasyGost/v2/gost.service && chmod -R 777 gost.service && mv gost.service /usr/lib/systemd/system
+    mkdir /etc/gost && wget --no-check-certificate https://gh-proxy.org/https://raw.githubusercontent.com/socosfly/Multi-EasyGost/v2/config.json && mv config.json /etc/gost && chmod -R 777 /etc/gost
   else
     rm -rf "$asset_name"
     wget --no-check-certificate "https://github.com/ginuerzh/gost/releases/download/v${ct_new_ver}/$asset_name"
